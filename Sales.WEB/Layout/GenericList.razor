@@ -1,0 +1,48 @@
+﻿@typeparam Titem
+
+@if (MyList is null)
+{
+    @if (Loading is null)
+    {
+        <div class="align-items-center">
+            <img src="https://www.bing.com/th/id/OGC.a463df1f4698fc59c7361cc89efe995c?pid=1.7&rurl=https%3a%2f%2fwww.wpfaster.org%2fwp-content%2fuploads%2f2013%2f06%2floading-gif.gif&ehk=nN5woIL9fkqiOxxj5mb%2bl74cCc8ijXgErlv%2fH55mK00%3d" alt="Loading..." />
+        </div>
+    }
+    else
+    {
+        @Loading
+    }
+}
+else if (MyList.Count == 0)
+{
+    @if (NoRecords is null)
+    {
+        <div class="align-items-center">
+            <h3>No hay registros</h3>
+        </div>
+    }
+    else
+    {
+        @NoRecords
+    }
+}
+else
+{
+    @Body
+}
+
+@code {
+    [Parameter]
+    public RenderFragment? Loading { get; set; }
+
+    [Parameter]
+    public RenderFragment? NoRecords { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public RenderFragment Body { get; set; } = null!;
+
+    [Parameter]
+    [EditorRequired]
+    public List<Titem> MyList { get; set; } = null!;
+}
