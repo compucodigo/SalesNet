@@ -17,12 +17,12 @@ namespace Sales.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAsync()
+        public async Task<IActionResult> GetListAsync()
         {
             return Ok(await _context.Countries.ToListAsync());
         }
 
-        [HttpGet("{id}:int")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetAsync(int id)
         {
             var country = await _context.Countries.FirstOrDefaultAsync(x => x.Id == id);
@@ -30,7 +30,7 @@ namespace Sales.API.Controllers
             {
                 return NotFound();
             }
-            return Ok(await _context.Countries.ToListAsync());
+            return Ok(country);
         }
 
         [HttpPost]
