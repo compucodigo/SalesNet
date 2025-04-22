@@ -9,19 +9,32 @@
 }
 else
 {
-    <h3 class="card-title">@state.Name</h3>
-    <div class="mb-2">
-        <a class="btn btn-primary" href="/cities/create/@state.Id">Nueva Ciudad</a>
-        <a class="btn btn-success" href="/countries/details/@state.CountryId">Volver a Estados</a>
+    <div class="mb-2" style="display: flex; flex-wrap:wrap; align-items: center;">
+        <div>
+            <a class="btn btn-primary" href="/cities/create/@Id">Nueva Ciudad</a>
+            <a class="btn btn-success" href="/countries/details/@state.CountryId">Regresar</a>
+        </div>
+        <div class="mx-2">
+            <input style="width: 400px;" type="text" class="form-control" id="titulo" placeholder="Buscar ciudad..." @bind-value="Filter" />
+        </div>
+        <div>
+            <button type="button" class="btn btn-outline-primary" @onclick="ApplyFilterAsync">Filtrar</button>
+            <button type="button" class="btn btn-outline-danger" @onclick="CleanFilterAsync">Limpiar</button>
+        </div>
     </div>
+
+
+    <Pagination CurrentPage="currentPage"
+                TotalPages="totalPages"
+                SelectedPage="SelectedPageAsync" />
 
     <GenericList MyList="cities">
         <Body>
             <table class="table table-striped">
                 <thead>
                     <tr>
-                        <th>Ciudades</th>
-                        <th></th>
+                        <th>Ciudad</th>
+                        <th style="width:180px"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -46,34 +59,61 @@ else
 @code {
     private State? state;
     private List<City>? cities;
+    private int currentPage = 1;
+    private int totalPages;
 
     [Parameter]
     public int Id { get; set; }
 
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string Page { get; set; } = string.Empty;
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string Filter { get; set; } = string.Empty;
+
+
     protected override async Task OnInitializedAsync()
     {
-        var responseHttp = await repository.Get<State>($"/api/states/{Id}");
-        if (responseHttp.Error)
+        await LoadAsync();
+    }
+
+    private async Task SelectedPageAsync(int page)
+    {
+        currentPage = page;
+        await LoadAsync(page);
+    }
+
+    private async Task LoadAsync(int page = 1)
+    {
+        if (!string.IsNullOrWhiteSpace(Page))
         {
-            if (responseHttp.HttpResponseMessage.StatusCode == HttpStatusCode.NotFound)
-            {
-                navigationManager.NavigateTo($"/states/{state!.Id}");
-                return;
-            }
-            else
-            {
-                var errorMessage = await responseHttp.GetErrorMessageAsync();
-                await sweetAlertService.FireAsync(new SweetAlertOptions
-                    {
-                        Title = "Error",
-                        Text = errorMessage,
-                        Icon = SweetAlertIcon.Error
-                    });
-                return;
-            }
+            page = Convert.ToInt32(Page);
         }
-        state = responseHttp.Response;
-        cities = state!.Cities!.ToList();
+
+        string url1 = string.Empty;
+        string url2 = string.Empty;
+
+        if (string.IsNullOrEmpty(Filter))
+        {
+            url1 = $"api/cities?id={Id}&page={page}";
+            url2 = $"api/cities/totalPages?id={Id}";
+        }
+        else
+        {
+            url1 = $"api/cities?id={Id}&page={page}&filter={Filter}";
+            url2 = $"api/cities/totalPages?id={Id}&filter={Filter}";
+        }
+
+
+        var responseHppt1 = await repository.Get<State>($"api/states/{Id}");
+        var responseHppt2 = await repository.Get<List<City>>(url1);
+        var responseHppt3 = await repository.Get<int>(url2);
+
+        state = responseHppt1.Response;
+        cities = responseHppt2.Response;
+        totalPages = responseHppt3.Response;
     }
 
     private async Task DeleteAsync(int id)
@@ -89,11 +129,13 @@ else
                     CancelButtonText = "No, quedarme"
                 }
         );
+
         var isConfirmed = string.IsNullOrEmpty(result.Value);
         if (isConfirmed)
         {
             return;
         }
+
         var httpResponse = await repository.Delete($"/api/cities/{id}");
         if (httpResponse.Error)
         {
@@ -101,6 +143,20 @@ else
             await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
             return;
         }
+
         cities = cities!.Where(c => c.Id != id).ToList();
+    }
+
+    private async Task CleanFilterAsync()
+    {
+        Filter = string.Empty;
+        await ApplyFilterAsync();
+    }
+
+    private async Task ApplyFilterAsync()
+    {
+        int page = 1;
+        await LoadAsync(page);
+        await SelectedPageAsync(page);
     }
 }
