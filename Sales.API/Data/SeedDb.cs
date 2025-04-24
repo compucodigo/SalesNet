@@ -1,7 +1,10 @@
 ﻿
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Sales.API.Helpers;
 using Sales.API.Services;
 using Sales.Shared.Entities;
+using Sales.Shared.Enums;
 using Sales.Shared.Responses;
 
 namespace Sales.API.Data
@@ -10,16 +13,52 @@ namespace Sales.API.Data
     {
         private readonly DataContext _context;
         private readonly IApiService _apiService;
+        private readonly IUserHelper _userHelper;
 
-        public SeedDb(DataContext dataContext, IApiService apiService)
+        public SeedDb(DataContext dataContext, IApiService apiService, IUserHelper userHelper)
         {
             _context = dataContext;
             _apiService = apiService;
+            _userHelper = userHelper;
         }
         public async Task SeedAsync()
         {
             await _context.Database.EnsureCreatedAsync();
             await CheckCountriesAsync();
+            await CheckRolesAsync();
+            await CheckUserAsync("1010", "Juan", "Perez", "jperez@yopmail.com", "+584145055749", "direccion", UserType.Admin);
+        }
+
+        private async Task CheckRolesAsync()
+        {
+            await _userHelper.CheckRoleAsync(UserType.Admin.ToString());
+            await _userHelper.CheckRoleAsync(UserType.User.ToString());
+        }
+
+        private async Task CheckUserAsync(string document, string firstName, string lastName, string email, string phone, string address, UserType userType)
+        {
+            User user = await _userHelper.GetUserAsync(email);
+            if (user == null)
+            {
+                user = new User
+                {
+                    Document = document,
+                    FirstName = firstName,
+                    LastName = lastName,
+                    Email = email,
+                    PhoneNumber = phone,
+                    Address = address,
+                    UserName = email,
+                    City = _context.Cities!.FirstOrDefault(),
+                    UserType = userType
+                };
+                IdentityResult result = await _userHelper.AddUserAsync(user, "123456");
+                if (result != IdentityResult.Success)
+                {
+                    throw new Exception("Create User Error");
+                }
+                await _userHelper.AddUserToRoleAsync(user, userType.ToString());
+            }
         }
 
         private async Task CheckCountriesAsync()
