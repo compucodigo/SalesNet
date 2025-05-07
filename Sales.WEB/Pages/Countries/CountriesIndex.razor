@@ -93,18 +93,18 @@ SelectedPage="SelectedPageAsync" />
             url1 = $"/api/countries?page={page}";
             url2 = $"/api/countries/totalPages";
         }
-
-        var responseHttp1 = await repository.Get<List<Country>>(url1);
-        var responseHttp2 = await repository.Get<int>(url2);
-        if (responseHttp1.Error)
+        try
         {
-            var message = await responseHttp1.GetErrorMessageAsync();
-            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
-            return;
-        }
+            var responseHttp1 = await repository.Get<List<Country>>(url1);
+            var responseHttp2 = await repository.Get<int>(url2);
 
-        Countries = responseHttp1.Response;
-        totalPages = responseHttp2.Response;
+            Countries = responseHttp1.Response;
+            totalPages = responseHttp2.Response;
+        }
+        catch (Exception ex)
+        {
+            await sweetAlertService.FireAsync("Error", ex.Message, SweetAlertIcon.Error);
+        }
     }
 
     private async Task SelectedPageAsync(int page)
