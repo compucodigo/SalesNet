@@ -21,6 +21,13 @@ namespace Sales.API.Controllers
             _context = context;
         }
 
+        [AllowAnonymous]
+        [HttpGet("combo")]
+        public async Task<IActionResult> GetComboAsync()
+        {            
+            return Ok(await _context.Countries.ToListAsync());
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetAsync([FromQuery] PaginationDTO pagination)
         {
